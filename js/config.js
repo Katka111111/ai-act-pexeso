@@ -9,11 +9,21 @@ const POLL_INTERVAL_MS = 2000;
 // Timeout pro každé síťové volání na Firebase (v milisekundách).
 const FETCH_TIMEOUT_MS = 3000;
 
-// ID dnešní "session" - podle data. Různé dny školení = jiná session = nové losování z celé banky 60 dvojic.
+// ID "session" - podle data, volitelně doplněné o vlastní označení z adresy
+// (?s=nazev), aby šlo mít i víc běhů (session) za jeden den. Různé session =
+// jiné losování z celé banky 60 dvojic a oddělený žebříček.
+// Odkaz/QR pro hráče a plátno lektorky musí mít STEJNÝ parametr ?s=..., jinak
+// se nepotkají ve stejné session - o to se stará board.html automaticky.
 function getSessionId() {
   const d = new Date();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+
+  const params = new URLSearchParams(window.location.search);
+  const raw = (params.get("s") || "").trim().toLowerCase();
+  const suffix = raw.replace(/[^a-z0-9-]/g, "").slice(0, 30);
+
+  return suffix ? `${dateStr}-${suffix}` : dateStr;
 }

@@ -380,9 +380,23 @@ button:active {
   color: #1e7a45;
 }
 
+.pexeso-card.matched {
+  animation: matchPop 0.4s ease forwards;
+}
+
+@keyframes matchPop {
+  0% { transform: scale(1); opacity: 1; }
+  55% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0; }
+}
+
 .pexeso-card.mismatch .face.front {
   animation: shake 0.4s ease;
   border-color: #e07070;
+}
+
+.pexeso-card.blocked-shake {
+  animation: shake 0.3s ease;
 }
 
 .pexeso-card.locked {

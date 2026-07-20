@@ -168,16 +168,24 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// Karty se otáčejí ručně: klik na líc otočí kartu rubem nahoru zpět (bez čekání),
-// klik na rub kartu odkryje a NEZŮSTÁVÁ zamčená - lze mít odkrytých víc karet
-// najednou a nechat je tak, dokud si k nim hráč sám nenajde dvojici. Chyba se
-// počítá jen tehdy, když stejnou kartičku hráč odkrývá už podruhé (a stále
-// nenajde dvojici) - první podívání na kartu je vždy zdarma.
+// Karty se otáčejí ručně (žádné automatické otočení zpět po čekání), ale
+// najednou smí být lícem nahoru NEJVÝŠ dvě nespárované karty - dokud hráč
+// aspoň jednu z nich sám neotočí zpět rubem nahoru, další kartu otočit nejde.
+// Chyba se počítá jen tehdy, když stejnou kartičku hráč odkrývá už podruhé
+// (a stále nenajde dvojici) - první podívání na kartu je vždy zdarma.
+// Spárované dvojice po krátké animaci úplně zmizí z hrací plochy.
 function onCardClick(el) {
   if (el.classList.contains("matched")) return;
 
   if (el.classList.contains("flipped")) {
     el.classList.remove("flipped");
+    return;
+  }
+
+  const faceUpCount = document.querySelectorAll(".pexeso-card.flipped:not(.matched)").length;
+  if (faceUpCount >= 2) {
+    el.classList.add("blocked-shake");
+    el.addEventListener("animationend", () => el.classList.remove("blocked-shake"), { once: true });
     return;
   }
 
@@ -195,6 +203,9 @@ function onCardClick(el) {
     partner.classList.remove("mismatch");
     el.classList.add("matched");
     partner.classList.add("matched");
+    [el, partner].forEach((card) => {
+      card.addEventListener("animationend", () => card.remove(), { once: true });
+    });
     matchedCount++;
     $("stat-found").textContent = `${matchedCount} / ${currentPairs.length}`;
     if (matchedCount === currentPairs.length) {

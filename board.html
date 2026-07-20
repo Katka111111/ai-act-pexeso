@@ -23,12 +23,33 @@
   <section id="screen-mode-select" class="screen active">
     <div class="card-panel" style="max-width:640px;">
       <h2>Zvol režim dnešní hry</h2>
-      <p>Session (dnešní datum): <strong id="session-date"></strong></p>
+      <p>Aktuální session: <strong id="session-date"></strong></p>
+
+      <div style="text-align:left;background:var(--bg);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+        <p style="margin:0 0 8px;font-size:14px;color:var(--text-muted);">
+          Chceš dnes spustit víc samostatných běhů (např. dopoledne/odpoledne, dvě různé skupiny)?
+          Zadej jim odlišné označení - každé bude mít vlastní losování i žebříček.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="session-label-input" placeholder="např. odpoledne" style="flex:1;min-width:160px;margin:0;">
+          <button class="btn-secondary" id="btn-session-apply" style="min-width:auto;">Použít</button>
+          <button class="btn-secondary" id="btn-session-reset" style="min-width:auto;">Výchozí (jen datum)</button>
+        </div>
+      </div>
+
       <div class="mode-buttons">
         <button class="btn-primary" id="btn-mode-test">Test<br><small>individuální procvičení</small></button>
         <button class="btn-accent" id="btn-mode-soutez">Soutěž<br><small>3 kola, živý žebříček</small></button>
       </div>
       <p class="local-mode-note" id="board-local-note" style="display:none;"></p>
+
+      <div style="margin-top:20px;">
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">
+          Odkaz/QR pro hráče TÉTO session (naskenují ho, nebo pošli odkaz):
+        </p>
+        <p style="word-break:break-all;font-weight:600;color:var(--ozp-purple);" id="player-link-text"></p>
+        <img id="player-qr" alt="QR kód pro hráče" style="width:180px;height:180px;border-radius:10px;box-shadow:var(--shadow);">
+      </div>
     </div>
   </section>
 
@@ -67,7 +88,7 @@
     </div>
     <div class="leaderboard-list" id="final-list"></div>
     <div style="text-align:center;margin-top:20px;">
-      <button class="btn-secondary" id="btn-back-to-monitor">Zpět na živý žebříček</button>
+      <button class="btn-secondary" id="btn-back-to-monitor">Zpět na žebříček podle kol</button>
     </div>
   </section>
 
@@ -88,8 +109,34 @@
   let currentViewRound = 1;
   let pollTimer = null;
 
+  function getCurrentLabel() {
+    return new URLSearchParams(window.location.search).get("s") || "";
+  }
+
+  function goToLabel(label) {
+    const clean = (label || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+    const url = new URL(window.location.href);
+    if (clean) url.searchParams.set("s", clean);
+    else url.searchParams.delete("s");
+    window.location.href = url.toString();
+  }
+
+  function updatePlayerLinkAndQr() {
+    const playerUrl = new URL("index.html" + window.location.search, window.location.href).toString();
+    $("player-link-text").textContent = playerUrl;
+    $("player-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playerUrl)}`;
+  }
+
   async function initModeScreen() {
     $("session-date").textContent = LB.getSession();
+    $("session-label-input").value = getCurrentLabel();
+    updatePlayerLinkAndQr();
+    $("btn-session-apply").addEventListener("click", () => goToLabel($("session-label-input").value));
+    $("session-label-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") goToLabel($("session-label-input").value);
+    });
+    $("btn-session-reset").addEventListener("click", () => goToLabel(""));
+
     if (LB.isLocal()) {
       $("board-local-note").style.display = "block";
       $("board-local-note").textContent = LB.getLocalReason();
