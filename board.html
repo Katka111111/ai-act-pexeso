@@ -38,6 +38,7 @@
       <span class="badge">Test</span>
       <h2>Probíhá individuální procvičení</h2>
       <p>Hráči trénují sami za sebe. Výsledky jsou soukromé a nikam se nezapisují, žebříček se pro tento režim nezobrazuje.</p>
+      <button class="btn-secondary btn-change-mode" style="margin-top:10px;">Změnit režim hry</button>
     </div>
   </section>
 
@@ -52,8 +53,9 @@
     <div class="leaderboard-list" id="leaderboard-list">
       <p class="empty-note">Čekáme na výsledky…</p>
     </div>
-    <div style="text-align:center;margin-top:26px;">
-      <button class="btn-primary" id="btn-show-final" style="max-width:340px;margin:0 auto;">Zobrazit celkové výsledky (po 3. kole)</button>
+    <div style="text-align:center;margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn-primary" id="btn-show-final" style="max-width:340px;">Zobrazit celkové výsledky (po 3. kole)</button>
+      <button class="btn-secondary btn-change-mode" style="max-width:220px;">Změnit režim hry</button>
     </div>
   </section>
 
@@ -253,6 +255,15 @@
   $("btn-back-to-monitor").addEventListener("click", () => {
     showScreen("screen-monitor-soutez");
     startPolling();
+  });
+
+  // Umožní lektorce kdykoli přepnout na jiný režim hry (Test <-> Soutěž),
+  // i když už dřív jeden zvolila - vrátí ji na výběrovou obrazovku.
+  document.querySelectorAll(".btn-change-mode").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (pollTimer) clearInterval(pollTimer);
+      showScreen("screen-mode-select");
+    });
   });
 
   window.addEventListener("resize", () => {

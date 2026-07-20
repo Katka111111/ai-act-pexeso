@@ -1,7 +1,6 @@
 // Herní mechanika: obrazovky, párování karet, stopky, napojení na SOUTĚŽ/TEST režim a konfety.
 
 const ROUND_SIZES = { 1: 8, 2: 10, 3: 12 };
-const MISMATCH_DELAY_MS = 700;
 
 let playerName = "";
 let mode = null;
@@ -11,9 +10,6 @@ let matchedCount = 0;
 let errorsCount = 0;
 let startTimeMs = 0;
 let timerIntervalId = null;
-let boardLocked = false;
-let firstPick = null;
-let secondPick = null;
 let stopModeWatcher = null;
 
 function $(id) {
@@ -124,9 +120,6 @@ async function getOrCreateRoundIds(round, size) {
 function beginRound() {
   matchedCount = 0;
   errorsCount = 0;
-  firstPick = null;
-  secondPick = null;
-  boardLocked = false;
   startTimeMs = performance.now();
 
   $("stat-errors").textContent = "0";
@@ -175,44 +168,43 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Karty se otáčejí ručně: klik na líc otočí kartu rubem nahoru zpět (bez čekání),
+// klik na rub kartu odkryje a NEZŮSTÁVÁ zamčená - lze mít odkrytých víc karet
+// najednou a nechat je tak, dokud si k nim hráč sám nenajde dvojici. Chyba se
+// počítá jen tehdy, když stejnou kartičku hráč odkrývá už podruhé (a stále
+// nenajde dvojici) - první podívání na kartu je vždy zdarma.
 function onCardClick(el) {
-  if (boardLocked) return;
-  if (el.classList.contains("flipped") || el.classList.contains("matched")) return;
+  if (el.classList.contains("matched")) return;
 
-  el.classList.add("flipped");
-
-  if (!firstPick) {
-    firstPick = el;
+  if (el.classList.contains("flipped")) {
+    el.classList.remove("flipped");
     return;
   }
-  secondPick = el;
-  boardLocked = true;
 
-  const isMatch = firstPick.dataset.cardId === secondPick.dataset.cardId;
+  el.classList.add("flipped");
+  const flipCount = parseInt(el.dataset.flipCount || "0", 10) + 1;
+  el.dataset.flipCount = String(flipCount);
 
-  if (isMatch) {
-    firstPick.classList.add("matched");
-    secondPick.classList.add("matched");
+  const cardId = el.dataset.cardId;
+  const partner = Array.from(document.querySelectorAll(".pexeso-card.flipped:not(.matched)")).find(
+    (other) => other !== el && other.dataset.cardId === cardId
+  );
+
+  if (partner) {
+    el.classList.remove("mismatch");
+    partner.classList.remove("mismatch");
+    el.classList.add("matched");
+    partner.classList.add("matched");
     matchedCount++;
     $("stat-found").textContent = `${matchedCount} / ${currentPairs.length}`;
-    firstPick = null;
-    secondPick = null;
-    boardLocked = false;
     if (matchedCount === currentPairs.length) {
       onRoundComplete();
     }
-  } else {
+  } else if (flipCount > 1) {
     errorsCount++;
     $("stat-errors").textContent = String(errorsCount);
-    firstPick.classList.add("mismatch");
-    secondPick.classList.add("mismatch");
-    setTimeout(() => {
-      firstPick.classList.remove("flipped", "mismatch");
-      secondPick.classList.remove("flipped", "mismatch");
-      firstPick = null;
-      secondPick = null;
-      boardLocked = false;
-    }, MISMATCH_DELAY_MS);
+    el.classList.add("mismatch");
+    el.addEventListener("animationend", () => el.classList.remove("mismatch"), { once: true });
   }
 }
 
