@@ -1,0 +1,35 @@
+JAK VYGENEROVAT QR KÓD PRO HRU AI ACT PEXESO
+==============================================
+
+Až bude hra nahraná na internetu (např. přes GitHub Pages) a budeš mít
+její webovou adresu (URL), např.:
+
+  https://tvoje-jmeno.github.io/ai-act-pexeso/
+
+postupuj takto:
+
+1. Otevři v prohlížeči tuto adresu (nahraď <URL-HRY> skutečnou adresou
+   tvé hry, klidně i s "index.html" na konci, pokud to tak funguje):
+
+   https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=<URL-ENCODED-URL-HRY>
+
+   Pozor: adresu hry je potřeba do parametru "data=" vložit tzv.
+   URL-encoded (speciální znaky jako ":" a "/" se nahradí kódy).
+   Nejjednodušší způsob: napiš celou výslednou adresu takto (uprav jen
+   tučně vyznačenou část):
+
+   https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https%3A%2F%2Ftvoje-jmeno.github.io%2Fai-act-pexeso%2F
+
+   (tj. "https://" nahraď "https%3A%2F%2F" a každé další "/" nahraď "%2F")
+
+2. V prohlížeči se zobrazí čtvercový QR kód.
+
+3. Klikni na obrázek pravým tlačítkem myši a zvol "Uložit obrázek jako…".
+
+4. Ulož soubor do této složky (assets) pod názvem:
+
+   qr-kod.png
+
+5. Hotovo - tento QR kód pak stačí vytisknout nebo promítnout na plátno,
+   účastníci ho naskenují mobilem a rovnou se dostanou na stránku
+   index.html tvé hry.

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Act Pexeso – OZP školení</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-badge">AI</div>
+      <div>
+        <h1>AI Act Pexeso</h1>
+        <small>Školení OZP – umělá inteligence a AI Act</small>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1. Zadání přezdívky -->
+  <section id="screen-welcome" class="screen active">
+    <div class="card-panel">
+      <h2>Vítej ve hře!</h2>
+      <p>Spáruj pojem s jeho definicí. Zadej si přezdívku a pojďme na to.</p>
+      <input type="text" id="nickname-input" maxlength="20" placeholder="Tvoje přezdívka" autocomplete="off">
+      <button class="btn-primary" id="btn-join">Vstoupit do hry</button>
+    </div>
+  </section>
+
+  <!-- 2. Čekání na volbu režimu lektorkou -->
+  <section id="screen-waiting" class="screen">
+    <div class="card-panel">
+      <span class="badge">Čekání</span>
+      <h2>Čekáme na start hry</h2>
+      <p>Lektorka za chvíli spustí hru na hlavním plátně. Zůstaň na této obrazovce.</p>
+      <div class="spinner"></div>
+      <p id="local-mode-note-waiting" class="local-mode-note" style="display:none;"></p>
+    </div>
+  </section>
+
+  <!-- 3. Info o kole / testu, tlačítko Začít -->
+  <section id="screen-info" class="screen">
+    <div class="card-panel">
+      <span class="badge" id="info-badge">Kolo 1 z 3</span>
+      <h2 id="info-title">Připrav se</h2>
+      <p id="info-text">Uvidíš karty s pojmy a definicemi. Klikáním hledej správné dvojice.</p>
+      <button class="btn-accent" id="btn-start-round">Začít</button>
+      <div class="footer-leave" style="margin-top:14px;">
+        <button class="btn-leave" id="btn-leave-info">Opustit hru</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Hrací plocha -->
+  <section id="screen-game" class="screen">
+    <div class="game-header">
+      <div class="stats">
+        <div class="stat-chip"><span class="label">Čas</span><span id="stat-time">0 s</span></div>
+        <div class="stat-chip"><span class="label">Chyby</span><span id="stat-errors">0</span></div>
+        <div class="stat-chip"><span class="label">Nalezeno</span><span id="stat-found">0 / 0</span></div>
+      </div>
+      <button class="btn-leave" id="btn-leave-game">Opustit hru</button>
+    </div>
+    <div class="board-grid" id="board-grid"></div>
+  </section>
+
+  <!-- 5a. Výsledek kola (soutěž) -->
+  <section id="screen-round-result" class="screen">
+    <div class="card-panel">
+      <span class="badge" id="round-result-badge">Kolo 1 dokončeno</span>
+      <h2>Skvěle!</h2>
+      <div class="result-rank" id="round-result-rank">Jsi 1. ze skupiny</div>
+      <div class="result-details">
+        <div><div class="num" id="round-result-time">0 s</div><div class="lbl">Čas</div></div>
+        <div><div class="num" id="round-result-errors">0</div><div class="lbl">Chyby</div></div>
+      </div>
+      <button class="btn-primary" id="btn-next-round">Pokračovat</button>
+    </div>
+  </section>
+
+  <!-- 5b. Výsledek testu (individuální) -->
+  <section id="screen-test-result" class="screen">
+    <div class="card-panel">
+      <span class="badge">Test dokončen</span>
+      <h2>Gratulujeme!</h2>
+      <div class="result-score" id="test-result-score">0</div>
+      <p>bodů</p>
+      <div class="result-details">
+        <div><div class="num" id="test-result-time">0 s</div><div class="lbl">Čas</div></div>
+        <div><div class="num" id="test-result-errors">0</div><div class="lbl">Chyby</div></div>
+      </div>
+      <p>Toto je čistě tvůj individuální výsledek, s nikým se neporovnává.</p>
+      <button class="btn-secondary" id="btn-restart">Zpět na start</button>
+    </div>
+  </section>
+
+  <!-- 6. Konec soutěže pro hráče (čeká se na vyhlášení na plátně) -->
+  <section id="screen-final-wait" class="screen">
+    <div class="card-panel">
+      <span class="badge">Vše hotovo</span>
+      <h2>Dokončil jsi všechna 3 kola!</h2>
+      <p>Sleduj hlavní plátno – lektorka za chvíli vyhlásí celkové pořadí.</p>
+    </div>
+  </section>
+
+  <!-- 7. Opuštění hry -->
+  <section id="screen-left" class="screen">
+    <div class="card-panel">
+      <h2>Opustil(a) jsi hru</h2>
+      <p>Děkujeme za účast. Pokud ses spletl(a), obnov stránku a vrať se na start.</p>
+      <button class="btn-secondary" id="btn-restart-2">Zpět na start</button>
+    </div>
+  </section>
+
+</div>
+
+<canvas id="confetti-canvas"></canvas>
+
+<script src="js/config.js"></script>
+<script src="js/cards-data.js"></script>
+<script src="js/leaderboard.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

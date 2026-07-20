@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Act Pexeso – plátno lektorky</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app board-app">
+
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-badge">AI</div>
+      <div>
+        <h1>AI Act Pexeso</h1>
+        <small>Plátno lektorky</small>
+      </div>
+    </div>
+  </header>
+
+  <!-- Volba režimu -->
+  <section id="screen-mode-select" class="screen active">
+    <div class="card-panel" style="max-width:640px;">
+      <h2>Zvol režim dnešní hry</h2>
+      <p>Session (dnešní datum): <strong id="session-date"></strong></p>
+      <div class="mode-buttons">
+        <button class="btn-primary" id="btn-mode-test">Test<br><small>individuální procvičení</small></button>
+        <button class="btn-accent" id="btn-mode-soutez">Soutěž<br><small>3 kola, živý žebříček</small></button>
+      </div>
+      <p class="local-mode-note" id="board-local-note" style="display:none;"></p>
+    </div>
+  </section>
+
+  <!-- Průběh: TEST -->
+  <section id="screen-monitor-test" class="screen">
+    <div class="card-panel" style="max-width:640px;">
+      <span class="badge">Test</span>
+      <h2>Probíhá individuální procvičení</h2>
+      <p>Hráči trénují sami za sebe. Výsledky jsou soukromé a nikam se nezapisují, žebříček se pro tento režim nezobrazuje.</p>
+    </div>
+  </section>
+
+  <!-- Průběh: SOUTĚŽ -->
+  <section id="screen-monitor-soutez" class="screen">
+    <div class="session-info">Soutěž – živý žebříček aktuálního kola</div>
+    <div class="round-tabs">
+      <button class="round-tab-btn active" data-round="1">Kolo 1</button>
+      <button class="round-tab-btn" data-round="2">Kolo 2</button>
+      <button class="round-tab-btn" data-round="3">Kolo 3</button>
+    </div>
+    <div class="leaderboard-list" id="leaderboard-list">
+      <p class="empty-note">Čekáme na výsledky…</p>
+    </div>
+    <div style="text-align:center;margin-top:26px;">
+      <button class="btn-primary" id="btn-show-final" style="max-width:340px;margin:0 auto;">Zobrazit celkové výsledky (po 3. kole)</button>
+    </div>
+  </section>
+
+  <!-- Finální vyhlášení -->
+  <section id="screen-final" class="screen">
+    <div class="winner-banner" id="winner-banner">
+      <h2>Vítěz dne</h2>
+      <div class="winner-name" id="winner-name">–</div>
+    </div>
+    <div class="leaderboard-list" id="final-list"></div>
+    <div style="text-align:center;margin-top:20px;">
+      <button class="btn-secondary" id="btn-back-to-monitor">Zpět na živý žebříček</button>
+    </div>
+  </section>
+
+</div>
+
+<canvas id="confetti-canvas-board"></canvas>
+
+<script src="js/config.js"></script>
+<script src="js/leaderboard.js"></script>
+<script>
+  function $(id) { return document.getElementById(id); }
+
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+    $(id).classList.add("active");
+  }
+
+  let currentViewRound = 1;
+  let pollTimer = null;
+
+  async function initModeScreen() {
+    $("session-date").textContent = LB.getSession();
+    if (LB.isLocal()) {
+      $("board-local-note").style.display = "block";
+      $("board-local-note").textContent = LB.getLocalReason();
+    }
+    $("btn-mode-test").addEventListener("click", async () => {
+      await LB.setMode("test");
+      showScreen("screen-monitor-test");
+    });
+    $("btn-mode-soutez").addEventListener("click", async () => {
+      await LB.setMode("soutez");
+      showScreen("screen-monitor-soutez");
+      startPolling();
+    });
+
+    // Pokud lektorka omylem obnoví stránku (F5, výpadek projektoru apod.), režim už
+    // byl dřív zvolen a je uložený - vrátíme ji rovnou na správnou obrazovku místo
+    // aby musela volbu dělat znovu.
+    try {
+      const existingMode = await LB.getMode();
+      if (existingMode === "test") {
+        showScreen("screen-monitor-test");
+      } else if (existingMode === "soutez") {
+        showScreen("screen-monitor-soutez");
+        startPolling();
+      }
+    } catch (e) {
+      // žádný uložený režim - zůstaneme na výběrové obrazovce
+    }
+  }
+
+  function initRoundTabs() {
+    document.querySelectorAll(".round-tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".round-tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentViewRound = parseInt(btn.dataset.round, 10);
+        refreshRound();
+      });
+    });
+  }
+
+  async function refreshRound() {
+    const list = $("leaderboard-list");
+    try {
+      const finishes = await LB.getFinishes(currentViewRound);
+      const rows = Object.keys(finishes)
+        .map((key) => ({ jmeno: key, ...finishes[key] }))
+        .sort((a, b) => (a.poradi_v_kole || 999) - (b.poradi_v_kole || 999));
+
+      if (rows.length === 0) {
+        list.innerHTML = '<p class="empty-note">Čekáme na výsledky…</p>';
+        return;
+      }
+      list.innerHTML = rows
+        .map(
+          (r) => `
+        <div class="lb-row">
+          <div class="pos">${r.poradi_v_kole}</div>
+          <div class="name">${escapeHtml(r.jmeno)}</div>
+          <div class="meta">${r.trvani_s ?? "?"} s • ${r.pocet_chyb ?? 0} chyb</div>
+        </div>`
+        )
+        .join("");
+    } catch (e) {
+      list.innerHTML = '<p class="empty-note">Čekáme na výsledky…</p>';
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    refreshRound();
+    pollTimer = setInterval(refreshRound, POLL_INTERVAL_MS);
+  }
+
+  async function showFinalStandings() {
+    if (pollTimer) clearInterval(pollTimer);
+    const list = $("final-list");
+    list.innerHTML = '<p class="empty-note">Čekáme na výsledky…</p>';
+    showScreen("screen-final");
+    try {
+      const { standings } = await LB.computeOverallStandings();
+      if (standings.length === 0) {
+        $("winner-name").textContent = "–";
+        list.innerHTML = '<p class="empty-note">Čekáme na výsledky…</p>';
+        return;
+      }
+      $("winner-name").textContent = standings[0].jmeno;
+      list.innerHTML = standings
+        .map((s) => {
+          const meta =
+            s.stav === "dokoncil"
+              ? `${s.body} bodů • ${s.casSoucet} s celkem`
+              : "odešel(a) dřív, než dohrál(a) všechna kola";
+          return `
+          <div class="lb-row">
+            <div class="pos">${s.poradi}</div>
+            <div class="name">${escapeHtml(s.jmeno)}</div>
+            <div class="meta">${meta}</div>
+          </div>`;
+        })
+        .join("");
+      startBoardConfetti();
+    } catch (e) {
+      list.innerHTML = '<p class="empty-note">Čekáme na výsledky…</p>';
+    }
+  }
+
+  let boardConfettiRAF = null;
+  function startBoardConfetti() {
+    const canvas = $("confetti-canvas-board");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#702082", "#ED8B00", "#9451a8", "#ffb347", "#63c98a", "#ffffff"];
+    const particles = [];
+    for (let i = 0; i < 260; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * canvas.height * 0.6,
+        size: 6 + Math.random() * 9,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vy: 2 + Math.random() * 3.5,
+        vx: -1.5 + Math.random() * 3,
+        rot: Math.random() * 360,
+        vrot: -6 + Math.random() * 12,
+        shape: Math.random() > 0.5 ? "square" : "circle",
+      });
+    }
+    const start = performance.now();
+    if (boardConfettiRAF) cancelAnimationFrame(boardConfettiRAF);
+    function frame(now) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const elapsed = now - start;
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vrot;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        if (p.shape === "square") ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+      if (elapsed < 6000) boardConfettiRAF = requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    boardConfettiRAF = requestAnimationFrame(frame);
+  }
+
+  $("btn-show-final").addEventListener("click", showFinalStandings);
+  $("btn-back-to-monitor").addEventListener("click", () => {
+    showScreen("screen-monitor-soutez");
+    startPolling();
+  });
+
+  window.addEventListener("resize", () => {
+    const c1 = $("confetti-canvas-board");
+    c1.width = window.innerWidth;
+    c1.height = window.innerHeight;
+  });
+
+  initModeScreen();
+  initRoundTabs();
+</script>
+</body>
+</html>

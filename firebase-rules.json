@@ -1,0 +1,61 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sessions": {
+      ".read": true,
+      ".write": true,
+      "$sessionId": {
+        "mode": {
+          ".validate": "newData.isString() && (newData.val() === 'test' || newData.val() === 'soutez')"
+        },
+        "roundPairs": {
+          "$round": {
+            ".validate": "newData.hasChildren()"
+          }
+        },
+        "rounds": {
+          "$round": {
+            "finishes": {
+              "$hrac": {
+                ".validate": "newData.hasChildren(['cas_dokonceni', 'pocet_chyb', 'poradi_v_kole'])",
+                "cas_dokonceni": {
+                  ".validate": "newData.isNumber()"
+                },
+                "pocet_chyb": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0"
+                },
+                "poradi_v_kole": {
+                  ".validate": "newData.isNumber() && newData.val() >= 1"
+                },
+                "trvani_s": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            }
+          }
+        },
+        "players": {
+          "$hrac": {
+            ".validate": "newData.hasChildren(['jmeno', 'status'])",
+            "jmeno": {
+              ".validate": "newData.isString() && newData.val().length <= 60"
+            },
+            "status": {
+              ".validate": "newData.isString() && (newData.val() === 'hraje' || newData.val() === 'odesel')"
+            },
+            "cas_odchodu": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    }
+  }
+}
