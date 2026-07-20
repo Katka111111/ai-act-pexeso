@@ -1,5 +1,18 @@
 # Návod: jak spustit hru AI Act Pexeso na internetu
 
+**Krok 1 a 2 (GitHub + GitHub Pages) už jsou hotové.** Hra běží na adrese:
+
+- Pro hráče: **https://katka111111.github.io/ai-act-pexeso/**
+- Pro lektorku/plátno: **https://katka111111.github.io/ai-act-pexeso/board.html**
+- Zdrojový kód: https://github.com/Katka111111/ai-act-pexeso
+
+QR kód na hru je už i v prezentaci (poslední slidy). Pokud budeš chtít
+i živý sdílený žebříček mezi hráči v soutěžním režimu, pokračuj kroky 3-5
+níže (Firebase) - zatím hra běží v tzv. "lokálním režimu" (funguje, jen bez
+sdíleného žebříčku mezi zařízeními).
+
+---
+
 Tento návod je pro úplného začátečníka. Nebudeš potřebovat žádnou příkazovou
 řádku ani programování - všechno se dělá klikáním myší v internetovém
 prohlížeči (Chrome, Edge apod.).
