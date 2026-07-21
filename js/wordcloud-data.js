@@ -152,6 +152,14 @@ const WC = (() => {
     return await dbPut(`wordclouds/${sessionId}/created`, true);
   }
 
+  async function getQuestion(sessionId) {
+    return await dbGet(`wordclouds/${sessionId}/question`);
+  }
+
+  async function setQuestion(sessionId, text) {
+    return await dbPut(`wordclouds/${sessionId}/question`, String(text || "").slice(0, 200));
+  }
+
   async function addWord(sessionId, rawWord) {
     const word = normalizeWord(rawWord);
     if (!word) return { ok: false, reason: "prazdne", words: await getMyWords(sessionId) };
@@ -267,6 +275,8 @@ const WC = (() => {
     removeWord,
     getWordCounts,
     touchSession,
+    getQuestion,
+    setQuestion,
     deleteSession,
     listTodaySessions,
     watch,

@@ -23,11 +23,15 @@
     <div class="card-panel" style="max-width:760px;">
       <h2 style="margin-bottom:6px;">Správa dnešních běhů</h2>
       <p style="color:var(--text-muted);font-size:14px;margin-top:0;">
-        Zobrazuje se: <strong id="current-session-label"></strong>
+        Zobrazuje se: <strong id="current-session-label"></strong><br>
+        Otázka pro účastníky: <em id="current-session-question"></em>
       </p>
 
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <input type="text" id="session-label-input" placeholder="označení session, např. odpoledne (nepovinné)" style="flex:1;min-width:180px;margin:0;">
+      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-        <input type="text" id="session-label-input" placeholder="např. odpoledne (nepovinné)" style="flex:1;min-width:180px;margin:0;">
+        <input type="text" id="session-question-input" placeholder="Otázka pro účastníky, např. Co si představíte pod pojmem umělá inteligence?" style="flex:1;min-width:180px;margin:0;">
         <button class="btn-primary" id="btn-session-create" style="min-width:auto;">Vytvořit / přepnout</button>
       </div>
 
@@ -37,9 +41,9 @@
   </section>
 
   <section style="display:flex;flex-direction:column;align-items:center;width:100%;margin-top:16px;">
-    <div class="card-panel" style="max-width:900px;">
+    <div class="card-panel" style="max-width:1100px;width:100%;">
       <div id="cloud-empty" class="empty-note">Zatím žádné odpovědi – jakmile někdo odešle slovo, objeví se tady.</div>
-      <div id="cloud-wrap" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;min-height:220px;padding:10px;"></div>
+      <div id="cloud-wrap" style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;align-items:center;min-height:65vh;padding:24px;"></div>
     </div>
   </section>
 
@@ -59,6 +63,7 @@
   function $(id) { return document.getElementById(id); }
 
   const dateStr = getDateStr();
+  const DEFAULT_QUESTION = "Co si představíte pod pojmem „umělá inteligence“?";
   let currentSessionId = getSessionId();
   let pollStop = null;
 
@@ -85,12 +90,14 @@
     // aktuální session musí být vidět v seznamu i těsně po vytvoření
     if (!ids.includes(currentSessionId)) ids.push(currentSessionId);
     ids.sort();
+    const questions = await Promise.all(ids.map((id) => WC.getQuestion(id)));
     $("session-tabs").innerHTML = ids
-      .map((id) => {
+      .map((id, i) => {
         const label = labelFromSessionId(id) || "výchozí";
         const active = id === currentSessionId;
+        const question = questions[i] || DEFAULT_QUESTION;
         return `<span style="display:inline-flex;align-items:stretch;border-radius:8px;overflow:hidden;">
-          <button data-id="${escapeHtml(id)}" class="round-tab-btn${active ? " active" : ""}" style="border-radius:0;">${escapeHtml(label)}</button>
+          <button data-id="${escapeHtml(id)}" title="${escapeHtml(question)}" class="round-tab-btn${active ? " active" : ""}" style="border-radius:0;">${escapeHtml(label)}</button>
           <button data-delete-id="${escapeHtml(id)}" title="Smazat tuto session" style="all:unset;cursor:pointer;color:#a33;background:#fdeeee;font-weight:800;padding:0 12px;display:flex;align-items:center;">×</button>
         </span>`;
       })
@@ -153,10 +160,13 @@
     const maxCount = counts[0].count;
     const minCount = counts[counts.length - 1].count;
     const scattered = [...counts].sort((a, b) => stableHash(a.word) - stableHash(b.word));
+    // Barvy se střídají podle pořadí ve zpřeházeném poli (ne podle otisku slova) -
+    // tím je zaručeno, že se barvy skutečně střídají a nemůže se náhodou sejít,
+    // že vyjdou všechna slova stejnou barvou.
     $("cloud-wrap").innerHTML = scattered
-      .map((c) => {
+      .map((c, i) => {
         const size = fontSizeFor(c.count, minCount, maxCount);
-        const color = COLORS[Math.abs(stableHash(c.word)) % COLORS.length];
+        const color = COLORS[i % COLORS.length];
         return `<span title="${c.count}×" style="font-weight:700;font-size:${size}px;color:${color};line-height:1;">${escapeHtml(c.word)}</span>`;
       })
       .join("");
@@ -169,16 +179,24 @@
     history.replaceState(null, "", labelFromSessionId(id) ? `?s=${encodeURIComponent(labelFromSessionId(id))}` : window.location.pathname);
     updatePlayerLinkAndQr();
     await WC.touchSession(id);
+    const question = await WC.getQuestion(id);
+    $("current-session-question").textContent = question || DEFAULT_QUESTION;
+    $("session-question-input").value = question || "";
     await refreshTabs();
     startPolling();
   }
 
-  $("btn-session-create").addEventListener("click", () => {
+  $("btn-session-create").addEventListener("click", async () => {
     const label = $("session-label-input").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
     const id = label ? `${dateStr}-${label}` : dateStr;
-    switchToSession(id);
+    const question = $("session-question-input").value.trim();
+    if (question) await WC.setQuestion(id, question);
+    await switchToSession(id);
   });
   $("session-label-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("btn-session-create").click();
+  });
+  $("session-question-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") $("btn-session-create").click();
   });
 

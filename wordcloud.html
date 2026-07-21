@@ -21,7 +21,7 @@
 
   <section class="screen active">
     <div class="card-panel" style="max-width:480px;">
-      <h2>Co si představíte pod pojmem „umělá inteligence“?</h2>
+      <h2 id="question-title">Co si představíte pod pojmem „umělá inteligence“?</h2>
       <p>Napiš jedno slovo nebo krátkou frázi a odešli. Můžeš přidat až <strong id="max-words-label">5</strong> odpovědí.</p>
 
       <input type="text" id="word-input" placeholder="např. chatbot" maxlength="40">
@@ -110,6 +110,10 @@
     $("local-mode-note").style.display = "block";
     $("local-mode-note").textContent = WC.getLocalReason();
   }
+
+  WC.getQuestion(sessionId).then((q) => {
+    if (q) $("question-title").textContent = q;
+  });
 
   renderMyWords();
 </script>
