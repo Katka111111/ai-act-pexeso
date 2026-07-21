@@ -65,7 +65,12 @@
           "entries": {
             "$zarizeni": {
               "words": {
-                ".validate": "newData.hasChildren() && newData.numChildren() <= 5"
+                "0": { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "1": { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "2": { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "3": { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "4": { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "$other": { ".validate": false }
               },
               "$other": {
                 ".validate": false
