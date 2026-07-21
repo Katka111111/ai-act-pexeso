@@ -89,11 +89,27 @@
       .map((id) => {
         const label = labelFromSessionId(id) || "výchozí";
         const active = id === currentSessionId;
-        return `<button data-id="${escapeHtml(id)}" class="round-tab-btn${active ? " active" : ""}">${escapeHtml(label)}</button>`;
+        return `<span style="display:inline-flex;align-items:stretch;border-radius:8px;overflow:hidden;">
+          <button data-id="${escapeHtml(id)}" class="round-tab-btn${active ? " active" : ""}" style="border-radius:0;">${escapeHtml(label)}</button>
+          <button data-delete-id="${escapeHtml(id)}" title="Smazat tuto session" style="all:unset;cursor:pointer;color:#a33;background:#fdeeee;font-weight:800;padding:0 12px;display:flex;align-items:center;">×</button>
+        </span>`;
       })
       .join("");
-    document.querySelectorAll("#session-tabs button").forEach((btn) => {
+    document.querySelectorAll("#session-tabs button[data-id]").forEach((btn) => {
       btn.addEventListener("click", () => switchToSession(btn.dataset.id));
+    });
+    document.querySelectorAll("#session-tabs button[data-delete-id]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.deleteId;
+        const label = labelFromSessionId(id) || "výchozí";
+        if (!confirm(`Opravdu smazat session „${label}" a všechny její odpovědi? Tohle nejde vzít zpět.`)) return;
+        await WC.deleteSession(id);
+        if (id === currentSessionId) {
+          await switchToSession(dateStr);
+        } else {
+          await refreshTabs();
+        }
+      });
     });
   }
 
@@ -103,6 +119,18 @@
     if (maxCount === minCount) return (MIN_PX + MAX_PX) / 2;
     const ratio = Math.sqrt((count - minCount) / (maxCount - minCount));
     return Math.round(MIN_PX + (MAX_PX - MIN_PX) * ratio);
+  }
+
+  // Stabilní "náhodné" pořadí podle textu slova - stejné slovo vždy vyjde na stejné
+  // pořadí, takže se mrak při každém obnovení (pollingu) nepřeskládává a "neposkakuje",
+  // ale zároveň nejsou velká slova seřazená pěkně popořadě od nejčastějšího.
+  function stableHash(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = (h << 5) - h + str.charCodeAt(i);
+      h |= 0;
+    }
+    return h;
   }
 
   const COLORS = ["#702082", "#ED8B00", "#9451a8", "#c97600", "#4a1657"];
@@ -124,10 +152,11 @@
     $("cloud-empty").style.display = "none";
     const maxCount = counts[0].count;
     const minCount = counts[counts.length - 1].count;
-    $("cloud-wrap").innerHTML = counts
-      .map((c, i) => {
+    const scattered = [...counts].sort((a, b) => stableHash(a.word) - stableHash(b.word));
+    $("cloud-wrap").innerHTML = scattered
+      .map((c) => {
         const size = fontSizeFor(c.count, minCount, maxCount);
-        const color = COLORS[i % COLORS.length];
+        const color = COLORS[Math.abs(stableHash(c.word)) % COLORS.length];
         return `<span title="${c.count}×" style="font-weight:700;font-size:${size}px;color:${color};line-height:1;">${escapeHtml(c.word)}</span>`;
       })
       .join("");

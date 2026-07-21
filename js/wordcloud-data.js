@@ -217,6 +217,28 @@ const WC = (() => {
     }
   }
 
+  // Smaže celou session (všechny odpovědi) - pro lektorku na plátně.
+  async function deleteSession(sessionId) {
+    if (localMode) {
+      const tree = loadLocalTree();
+      if (tree.wordclouds) {
+        delete tree.wordclouds[sessionId];
+        saveLocalTree(tree);
+      }
+      return;
+    }
+    try {
+      await fetchWithTimeout(remoteUrl(`wordclouds/${sessionId}`), { method: "DELETE" });
+    } catch (e) {
+      switchToLocalFallback("Živý slovní mrak momentálně neodpovídá, pokračujeme lokálně na tomto zařízení.");
+      const tree = loadLocalTree();
+      if (tree.wordclouds) {
+        delete tree.wordclouds[sessionId];
+        saveLocalTree(tree);
+      }
+    }
+  }
+
   function watch(getterFn, callback, intervalMs) {
     let stopped = false;
     async function tick() {
@@ -245,6 +267,7 @@ const WC = (() => {
     removeWord,
     getWordCounts,
     touchSession,
+    deleteSession,
     listTodaySessions,
     watch,
   };
