@@ -65,10 +65,7 @@
           "entries": {
             "$zarizeni": {
               "words": {
-                ".validate": "newData.hasChildren() && newData.numChildren() <= 5",
-                "$index": {
-                  ".validate": "newData.isString() && newData.val().length <= 40"
-                }
+                ".validate": "newData.hasChildren() && newData.numChildren() <= 5"
               },
               "$other": {
                 ".validate": false
