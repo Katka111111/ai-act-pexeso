@@ -1,7 +1,7 @@
 // Nastavení Firebase Realtime Database.
 // Dokud tu je placeholder, hra automaticky běží v "lokálním režimu" (viz leaderboard.js)
 // - je tedy plně hratelná i bez založeného Firebase účtu.
-const FIREBASE_URL = "NASTAVTE_ZDE";
+const FIREBASE_URL = https://ai-act-pexeso-default-rtdb.firebaseio.com/;
 
 // Jak často (v milisekundách) se dotazujeme Firebase na nové výsledky (žebříček, board.html).
 const POLL_INTERVAL_MS = 2000;
