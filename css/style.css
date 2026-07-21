@@ -652,8 +652,9 @@ footer.leave-bar {
 
 #cloud-panel:fullscreen #qr-side img,
 #cloud-panel:-webkit-full-screen #qr-side img {
-  width: 190px;
-  height: 190px;
+  width: min(280px, 90%);
+  height: auto;
+  aspect-ratio: 1 / 1;
 }
 
 #cloud-panel:fullscreen #btn-present,
@@ -663,7 +664,11 @@ footer.leave-bar {
 
 #cloud-panel:fullscreen #cloud-question-title,
 #cloud-panel:-webkit-full-screen #cloud-question-title {
-  font-size: 28px;
+  font-size: 44px;
+  line-height: 1.25;
   text-align: center;
   width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }

@@ -88,7 +88,7 @@
     const search = label ? `?s=${encodeURIComponent(label)}` : "";
     const playerUrl = new URL("wordcloud.html" + search, window.location.href).toString();
     $("player-link-text").textContent = playerUrl;
-    $("player-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playerUrl)}`;
+    $("player-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(playerUrl)}`;
   }
 
   async function refreshTabs() {
