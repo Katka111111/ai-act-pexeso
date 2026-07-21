@@ -56,6 +56,27 @@
           }
         }
       }
+    },
+    "wordclouds": {
+      ".read": true,
+      ".write": true,
+      "$datum": {
+        "$session": {
+          "entries": {
+            "$zarizeni": {
+              "words": {
+                ".validate": "newData.hasChildren() && newData.numChildren() <= 5",
+                "$index": {
+                  ".validate": "newData.isString() && newData.val().length <= 40"
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

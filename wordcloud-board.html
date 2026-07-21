@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Act – slovní mrak (plátno lektorky)</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app board-app">
+
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-badge">AI</div>
+      <div>
+        <h1>Slovní mrak</h1>
+        <small>Plátno lektorky</small>
+      </div>
+    </div>
+  </header>
+
+  <section style="display:flex;flex-direction:column;align-items:center;width:100%;">
+    <div class="card-panel" style="max-width:760px;">
+      <h2 style="margin-bottom:6px;">Správa dnešních běhů</h2>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:0;">
+        Zobrazuje se: <strong id="current-session-label"></strong>
+      </p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <input type="text" id="session-label-input" placeholder="např. odpoledne (nepovinné)" style="flex:1;min-width:180px;margin:0;">
+        <button class="btn-primary" id="btn-session-create" style="min-width:auto;">Vytvořit / přepnout</button>
+      </div>
+
+      <div id="session-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;"></div>
+      <p class="local-mode-note" id="board-local-note" style="display:none;"></p>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;align-items:center;width:100%;margin-top:16px;">
+    <div class="card-panel" style="max-width:900px;">
+      <div id="cloud-empty" class="empty-note">Zatím žádné odpovědi – jakmile někdo odešle slovo, objeví se tady.</div>
+      <div id="cloud-wrap" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;min-height:220px;padding:10px;"></div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;align-items:center;width:100%;margin-top:16px;">
+    <div class="card-panel" style="max-width:420px;">
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">Odkaz/QR pro účastníky TÉTO aktivity:</p>
+      <p style="word-break:break-all;font-weight:600;color:var(--ozp-purple);" id="player-link-text"></p>
+      <img id="player-qr" alt="QR kód pro účastníky" style="width:160px;height:160px;border-radius:10px;box-shadow:var(--shadow);">
+    </div>
+  </section>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/wordcloud-data.js"></script>
+<script>
+  function $(id) { return document.getElementById(id); }
+
+  const dateStr = getDateStr();
+  let currentSessionId = getSessionId();
+  let pollStop = null;
+
+  function labelFromSessionId(id) {
+    return id === dateStr ? "" : id.slice(dateStr.length + 1);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function updatePlayerLinkAndQr() {
+    const label = labelFromSessionId(currentSessionId);
+    const search = label ? `?s=${encodeURIComponent(label)}` : "";
+    const playerUrl = new URL("wordcloud.html" + search, window.location.href).toString();
+    $("player-link-text").textContent = playerUrl;
+    $("player-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playerUrl)}`;
+  }
+
+  async function refreshTabs() {
+    const ids = await WC.listTodaySessions(dateStr);
+    // aktuální session musí být vidět v seznamu i těsně po vytvoření
+    if (!ids.includes(currentSessionId)) ids.push(currentSessionId);
+    ids.sort();
+    $("session-tabs").innerHTML = ids
+      .map((id) => {
+        const label = labelFromSessionId(id) || "výchozí";
+        const active = id === currentSessionId;
+        return `<button data-id="${escapeHtml(id)}" class="round-tab-btn${active ? " active" : ""}">${escapeHtml(label)}</button>`;
+      })
+      .join("");
+    document.querySelectorAll("#session-tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => switchToSession(btn.dataset.id));
+    });
+  }
+
+  function fontSizeFor(count, minCount, maxCount) {
+    const MIN_PX = 16;
+    const MAX_PX = 58;
+    if (maxCount === minCount) return (MIN_PX + MAX_PX) / 2;
+    const ratio = Math.sqrt((count - minCount) / (maxCount - minCount));
+    return Math.round(MIN_PX + (MAX_PX - MIN_PX) * ratio);
+  }
+
+  const COLORS = ["#702082", "#ED8B00", "#9451a8", "#c97600", "#4a1657"];
+
+  function startPolling() {
+    if (pollStop) pollStop();
+    pollStop = WC.watch(() => WC.getWordCounts(currentSessionId), (data, err) => {
+      if (err || !data) return;
+      renderCounts(data);
+    }, POLL_INTERVAL_MS);
+  }
+
+  function renderCounts(counts) {
+    if (!counts || counts.length === 0) {
+      $("cloud-empty").style.display = "block";
+      $("cloud-wrap").innerHTML = "";
+      return;
+    }
+    $("cloud-empty").style.display = "none";
+    const maxCount = counts[0].count;
+    const minCount = counts[counts.length - 1].count;
+    $("cloud-wrap").innerHTML = counts
+      .map((c, i) => {
+        const size = fontSizeFor(c.count, minCount, maxCount);
+        const color = COLORS[i % COLORS.length];
+        return `<span title="${c.count}×" style="font-weight:700;font-size:${size}px;color:${color};line-height:1;">${escapeHtml(c.word)}</span>`;
+      })
+      .join("");
+  }
+
+  async function switchToSession(id) {
+    currentSessionId = id;
+    $("current-session-label").textContent = labelFromSessionId(id) || "(výchozí, jen datum)";
+    $("session-label-input").value = labelFromSessionId(id);
+    history.replaceState(null, "", labelFromSessionId(id) ? `?s=${encodeURIComponent(labelFromSessionId(id))}` : window.location.pathname);
+    updatePlayerLinkAndQr();
+    await WC.touchSession(id);
+    await refreshTabs();
+    startPolling();
+  }
+
+  $("btn-session-create").addEventListener("click", () => {
+    const label = $("session-label-input").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
+    const id = label ? `${dateStr}-${label}` : dateStr;
+    switchToSession(id);
+  });
+  $("session-label-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("btn-session-create").click();
+  });
+
+  async function init() {
+    if (WC.isLocal()) {
+      $("board-local-note").style.display = "block";
+      $("board-local-note").textContent = WC.getLocalReason();
+    }
+    await switchToSession(currentSessionId);
+  }
+
+  init();
+</script>
+</body>
+</html>

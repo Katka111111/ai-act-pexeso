@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Act – slovní mrak</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-badge">AI</div>
+      <div>
+        <h1>Slovní mrak</h1>
+        <small>Školení OZP – umělá inteligence a AI Act</small>
+      </div>
+    </div>
+  </header>
+
+  <section class="screen active">
+    <div class="card-panel" style="max-width:480px;">
+      <h2>Co si představíte pod pojmem „umělá inteligence“?</h2>
+      <p>Napiš jedno slovo nebo krátkou frázi a odešli. Můžeš přidat až <strong id="max-words-label">5</strong> odpovědí.</p>
+
+      <input type="text" id="word-input" placeholder="např. chatbot" maxlength="40">
+      <button class="btn-primary" id="btn-add-word">Přidat slovo</button>
+
+      <p class="local-mode-note" id="local-mode-note" style="display:none;"></p>
+
+      <div id="my-words-wrap" style="margin-top:18px;text-align:left;">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Tvoje odpovědi (<span id="my-words-count">0</span>/<span id="max-words-label-2">5</span>):</p>
+        <div id="my-words-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+      </div>
+
+      <p id="limit-note" style="display:none;color:var(--ozp-purple);font-weight:600;margin-top:14px;">
+        Dosáhl(a) jsi maximálního počtu odpovědí pro tuto aktivitu. Díky za zapojení!
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/wordcloud-data.js"></script>
+<script>
+  function $(id) { return document.getElementById(id); }
+
+  const sessionId = getSessionId();
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function renderMyWords() {
+    const words = await WC.getMyWords(sessionId);
+    $("my-words-count").textContent = String(words.length);
+    $("my-words-list").innerHTML = words
+      .map(
+        (w, i) => `
+      <span style="background:#efe4f2;color:var(--ozp-purple);border-radius:999px;padding:6px 10px 6px 14px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+        ${escapeHtml(w)}
+        <button data-index="${i}" class="btn-remove-word" style="all:unset;cursor:pointer;font-weight:800;padding:0 4px;color:#a33;">×</button>
+      </span>`
+      )
+      .join("");
+
+    document.querySelectorAll(".btn-remove-word").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await WC.removeWord(sessionId, parseInt(btn.dataset.index, 10));
+        await renderMyWords();
+        updateInputState();
+      });
+    });
+
+    updateInputState(words.length);
+  }
+
+  function updateInputState(count) {
+    const full = (count ?? 0) >= WC.MAX_WORDS_PER_DEVICE;
+    $("word-input").disabled = full;
+    $("btn-add-word").disabled = full;
+    $("limit-note").style.display = full ? "block" : "none";
+  }
+
+  async function onAdd() {
+    const val = $("word-input").value;
+    if (!val.trim()) {
+      $("word-input").focus();
+      return;
+    }
+    const result = await WC.addWord(sessionId, val);
+    $("word-input").value = "";
+    $("word-input").focus();
+    await renderMyWords();
+  }
+
+  $("btn-add-word").addEventListener("click", onAdd);
+  $("word-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") onAdd();
+  });
+
+  $("max-words-label").textContent = String(WC.MAX_WORDS_PER_DEVICE);
+  $("max-words-label-2").textContent = String(WC.MAX_WORDS_PER_DEVICE);
+
+  if (WC.isLocal()) {
+    $("local-mode-note").style.display = "block";
+    $("local-mode-note").textContent = WC.getLocalReason();
+  }
+
+  renderMyWords();
+</script>
+</body>
+</html>
