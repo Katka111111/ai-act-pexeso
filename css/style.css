@@ -598,3 +598,35 @@ footer.leave-bar {
     padding: 22px 18px;
   }
 }
+
+/* --- Prezentační režim (Fullscreen API) pro plátno slovního mraku --- */
+#cloud-panel:fullscreen,
+#cloud-panel:-webkit-full-screen {
+  max-width: none;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--bg);
+  box-shadow: none;
+}
+
+#cloud-panel:fullscreen #cloud-wrap,
+#cloud-panel:-webkit-full-screen #cloud-wrap {
+  min-height: 0;
+  flex: 1;
+}
+
+#cloud-panel:fullscreen #btn-present,
+#cloud-panel:-webkit-full-screen #btn-present {
+  display: none;
+}
+
+#cloud-panel:fullscreen #cloud-question-title,
+#cloud-panel:-webkit-full-screen #cloud-question-title {
+  font-size: 28px;
+  text-align: center;
+  width: 100%;
+}
