@@ -563,6 +563,18 @@ footer.leave-bar {
   font-weight: 800;
 }
 
+.cloud-question-title {
+  margin: 0 0 4px;
+  text-align: left;
+}
+
+.qr-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
 .empty-note {
   color: var(--text-muted);
   text-align: center;
@@ -624,6 +636,11 @@ footer.leave-bar {
   justify-content: center;
   background: var(--bg);
   box-shadow: none;
+}
+
+#cloud-panel:fullscreen #cloud-header-row,
+#cloud-panel:-webkit-full-screen #cloud-header-row {
+  display: block;
 }
 
 #cloud-panel:fullscreen #cloud-content-row,

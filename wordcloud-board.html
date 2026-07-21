@@ -42,15 +42,15 @@
 
   <section style="display:flex;flex-direction:column;align-items:center;width:100%;margin-top:16px;">
     <div class="card-panel" id="cloud-panel" style="max-width:1100px;width:100%;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-        <h2 id="cloud-question-title" style="margin:0 0 4px;text-align:left;"></h2>
+      <div id="cloud-header-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <h2 id="cloud-question-title" class="cloud-question-title"></h2>
         <button class="btn-secondary" id="btn-present" style="min-width:auto;white-space:nowrap;">⛶ Prezentovat na celou obrazovku</button>
       </div>
 
       <div id="cloud-content-row" style="display:flex;gap:20px;align-items:stretch;flex-wrap:wrap;">
         <div id="qr-side" style="flex:0 0 22%;min-width:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;border-right:1px solid #f0e6f2;padding-right:16px;">
           <p style="font-size:13px;color:var(--text-muted);margin:0;">Odkaz/QR pro účastníky:</p>
-          <img id="player-qr" alt="QR kód pro účastníky" style="width:150px;height:150px;border-radius:10px;box-shadow:var(--shadow);">
+          <img id="player-qr" class="qr-image" alt="QR kód pro účastníky">
           <p style="word-break:break-all;font-weight:600;color:var(--ozp-purple);font-size:12.5px;margin:0;" id="player-link-text"></p>
         </div>
         <div id="cloud-main" style="flex:1;min-width:0;">
