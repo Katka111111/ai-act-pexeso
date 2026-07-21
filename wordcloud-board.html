@@ -46,16 +46,18 @@
         <h2 id="cloud-question-title" style="margin:0 0 4px;text-align:left;"></h2>
         <button class="btn-secondary" id="btn-present" style="min-width:auto;white-space:nowrap;">⛶ Prezentovat na celou obrazovku</button>
       </div>
-      <div id="cloud-empty" class="empty-note">Zatím žádné odpovědi – jakmile někdo odešle slovo, objeví se tady.</div>
-      <div id="cloud-wrap" style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;align-items:center;min-height:65vh;padding:24px;"></div>
-    </div>
-  </section>
 
-  <section style="display:flex;flex-direction:column;align-items:center;width:100%;margin-top:16px;">
-    <div class="card-panel" style="max-width:420px;">
-      <p style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">Odkaz/QR pro účastníky TÉTO aktivity:</p>
-      <p style="word-break:break-all;font-weight:600;color:var(--ozp-purple);" id="player-link-text"></p>
-      <img id="player-qr" alt="QR kód pro účastníky" style="width:160px;height:160px;border-radius:10px;box-shadow:var(--shadow);">
+      <div id="cloud-content-row" style="display:flex;gap:20px;align-items:stretch;flex-wrap:wrap;">
+        <div id="qr-side" style="flex:0 0 22%;min-width:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;border-right:1px solid #f0e6f2;padding-right:16px;">
+          <p style="font-size:13px;color:var(--text-muted);margin:0;">Odkaz/QR pro účastníky:</p>
+          <img id="player-qr" alt="QR kód pro účastníky" style="width:150px;height:150px;border-radius:10px;box-shadow:var(--shadow);">
+          <p style="word-break:break-all;font-weight:600;color:var(--ozp-purple);font-size:12.5px;margin:0;" id="player-link-text"></p>
+        </div>
+        <div id="cloud-main" style="flex:1;min-width:0;">
+          <div id="cloud-empty" class="empty-note">Zatím žádné odpovědi – jakmile někdo odešle slovo, objeví se tady.</div>
+          <div id="cloud-wrap" style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;align-items:center;min-height:65vh;padding:24px;"></div>
+        </div>
+      </div>
     </div>
   </section>
 

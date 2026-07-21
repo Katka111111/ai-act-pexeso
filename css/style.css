@@ -599,6 +599,19 @@ footer.leave-bar {
   }
 }
 
+@media (max-width: 700px) {
+  #cloud-content-row {
+    flex-direction: column;
+  }
+  #qr-side {
+    border-right: none;
+    border-bottom: 1px solid #f0e6f2;
+    padding-right: 0;
+    padding-bottom: 16px;
+    flex-basis: auto;
+  }
+}
+
 /* --- Prezentační režim (Fullscreen API) pro plátno slovního mraku --- */
 #cloud-panel:fullscreen,
 #cloud-panel:-webkit-full-screen {
@@ -613,10 +626,34 @@ footer.leave-bar {
   box-shadow: none;
 }
 
+#cloud-panel:fullscreen #cloud-content-row,
+#cloud-panel:-webkit-full-screen #cloud-content-row {
+  flex: 1;
+  min-height: 0;
+}
+
+#cloud-panel:fullscreen #cloud-main,
+#cloud-panel:-webkit-full-screen #cloud-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 #cloud-panel:fullscreen #cloud-wrap,
 #cloud-panel:-webkit-full-screen #cloud-wrap {
   min-height: 0;
   flex: 1;
+}
+
+#cloud-panel:fullscreen #qr-side,
+#cloud-panel:-webkit-full-screen #qr-side {
+  flex-basis: 22%;
+}
+
+#cloud-panel:fullscreen #qr-side img,
+#cloud-panel:-webkit-full-screen #qr-side img {
+  width: 190px;
+  height: 190px;
 }
 
 #cloud-panel:fullscreen #btn-present,
