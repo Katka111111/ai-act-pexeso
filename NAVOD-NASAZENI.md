@@ -11,18 +11,14 @@ i živý sdílený žebříček mezi hráči v soutěžním režimu, pokračuj k
 níže (Firebase) - zatím hra běží v tzv. "lokálním režimu" (funguje, jen bez
 sdíleného žebříčku mezi zařízeními).
 
-**Bonus: slovní mrak** – ve stejném repozitáři běží i samostatný nástroj
-pro živý slovní mrak (úvodní icebreaker aktivita):
-- Pro účastníky: **https://katka111111.github.io/ai-act-pexeso/wordcloud.html**
-- Pro lektorku/plátno: **https://katka111111.github.io/ai-act-pexeso/wordcloud-board.html**
+**Slovní mrak (icebreaker aktivita) je teď v samostatném repozitáři**, aby
+tento repozitář obsahoval jen hru:
+- Zdrojový kód a vlastní návod: https://github.com/Katka111111/wordcloud
+- Pro účastníky: **https://katka111111.github.io/wordcloud/**
+- Pro lektorku/plátno: **https://katka111111.github.io/wordcloud/board.html**
 
-Na plátně slovního mraku si můžeš kdykoli vytvořit další běh (session) na
-tentýž den – zadej si vlastní označení (např. "dopoledne") a potvrď. Vytvořené
-běhy zůstávají jako "záložky" nahoře na plátně, takže se mezi nimi můžeš
-kdykoli přepínat tam a zpět. Ke každému běhu se automaticky zobrazí i vlastní
-QR kód/odkaz pro účastníky. Každý účastník může přidat max. 5 slov na jeden
-běh. Funguje úplně stejně jako pexeso – bez Firebase lokálně na daném
-zařízení, s Firebase (kroky 3-5 níže) živě a sdíleně pro všechny.
+Sdílí se stejný Firebase projekt jako tahle hra (jen jiná "část" databáze),
+takže žádné další zakládání účtů navíc.
 
 ---
 
