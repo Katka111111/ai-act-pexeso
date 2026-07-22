@@ -152,28 +152,27 @@ const LB = (() => {
     return data || {};
   }
 
-  // Zapíše dokončení hráče a spočítá jeho pořadí v kole (kolik hráčů dokončilo dřív + 1).
-  // casMs = čas dokončení (Date.now(), srovnatelný napříč zařízeními), trvaniS = doba hraní v sekundách (pro tie-break).
+  // Zapíše dokončení hráče a přepočítá pořadí VŠECH hráčů v kole podle skutečné rychlosti
+  // řešení (trvani_s - jak dlouho hráči trvalo kolo dohrát), ne podle toho, kdy na hodinách
+  // dokončil - hráči totiž nezačínají kolo ve stejnou chvíli, takže "kdo dřív na hodinách"
+  // by zvýhodňovalo toho, kdo dřív začal, i kdyby byl ve skutečnosti pomalejší.
+  // casMs (Date.now()) slouží jen jako tie-break při přesně shodném trvani_s.
   async function recordFinish(sessionId, round, playerName, casMs, pocetChyb, trvaniS) {
     const finishes = await getFinishes(sessionId, round);
-    let earlier = 0;
-    for (const name in finishes) {
-      if (name === playerName) continue;
-      const f = finishes[name];
-      if (f && typeof f.cas_dokonceni === "number" && f.cas_dokonceni < casMs) earlier++;
-    }
-    const poradi = earlier + 1;
-    const record = { cas_dokonceni: casMs, pocet_chyb: pocetChyb, poradi_v_kole: poradi, trvani_s: trvaniS };
-    await dbPut(`sessions/${sessionId}/rounds/${round}/finishes/${encodeName(playerName)}`, record);
-    // Po zápisu znovu spočítáme finální pořadí (mohli mezitím dokončit i jiní se stejným nebo dřívějším časem)
-    const fresh = await getFinishes(sessionId, round);
-    let finalEarlier = 0;
-    for (const name in fresh) {
-      if (name === encodeName(playerName)) continue;
-      const f = fresh[name];
-      if (f && typeof f.cas_dokonceni === "number" && f.cas_dokonceni < casMs) finalEarlier++;
-    }
-    return finalEarlier + 1;
+    const key = encodeName(playerName);
+    finishes[key] = { cas_dokonceni: casMs, pocet_chyb: pocetChyb, trvani_s: trvaniS };
+
+    const ranked = Object.entries(finishes).sort((a, b) => {
+      const diff = (a[1].trvani_s ?? Infinity) - (b[1].trvani_s ?? Infinity);
+      if (diff !== 0) return diff;
+      return (a[1].cas_dokonceni ?? Infinity) - (b[1].cas_dokonceni ?? Infinity);
+    });
+    ranked.forEach(([, rec], idx) => {
+      rec.poradi_v_kole = idx + 1;
+    });
+
+    await dbPut(`sessions/${sessionId}/rounds/${round}/finishes`, finishes);
+    return finishes[key].poradi_v_kole;
   }
 
   function encodeName(name) {
