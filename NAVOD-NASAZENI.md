@@ -1,15 +1,24 @@
 # Návod: jak spustit hru AI Act Pexeso na internetu
 
-**Krok 1 a 2 (GitHub + GitHub Pages) už jsou hotové.** Hra běží na adrese:
+**Krok 1 a 2 (GitHub + GitHub Pages) už jsou hotové.** Hra teď má dvě
+samostatné části:
 
+**SOUTĚŽ** (živá vícekolová hra s žebříčkem, řídí ji lektorka na plátně):
 - Pro hráče: **https://katka111111.github.io/ai-act-pexeso/**
 - Pro lektorku/plátno: **https://katka111111.github.io/ai-act-pexeso/board.html**
-- Zdrojový kód: https://github.com/Katka111111/ai-act-pexeso
 
-QR kód na hru je už i v prezentaci (poslední slidy). Pokud budeš chtít
+**TEST** (samostatné, nekonečné procvičování bez lektorky a bez jména -
+kdokoliv s odkazem si může kdykoliv zahrát, 7 náhodných dvojic, a hned
+po dohrání si vylosovat další kolo, dokud sám neklikne na "Chci odejít"):
+- **https://katka111111.github.io/ai-act-pexeso/test.html**
+
+Zdrojový kód: https://github.com/Katka111111/ai-act-pexeso
+
+QR kód na SOUTĚŽ je už i v prezentaci (poslední slidy). Pokud budeš chtít
 i živý sdílený žebříček mezi hráči v soutěžním režimu, pokračuj kroky 3-5
-níže (Firebase) - zatím hra běží v tzv. "lokálním režimu" (funguje, jen bez
-sdíleného žebříčku mezi zařízeními).
+níže (Firebase) - zatím soutěž běží v tzv. "lokálním režimu" (funguje, jen
+bez sdíleného žebříčku mezi zařízeními). TEST žádnou Firebase nepotřebuje -
+funguje vždy, i bez kroků 3-5.
 
 **Slovní mrak (icebreaker aktivita) je teď v samostatném repozitáři**, aby
 tento repozitář obsahoval jen hru:

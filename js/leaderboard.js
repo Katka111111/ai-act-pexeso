@@ -2,11 +2,15 @@
 // Pokud FIREBASE_URL vypadá jako nevyplněný placeholder, nebo síťové volání selže/vyprší,
 // hra automaticky přepne do "lokálního režimu" - žebříček se simuluje jen z localStorage
 // tohoto zařízení, aby šla hra otestovat i bez zřízeného Firebase projektu.
+//
+// Na rozdíl od dřívější verze si funkce sessionId nepamatují samy - dostávají ho jako
+// parametr, aby plátno lektorky mohlo přepínat mezi víc soutěžemi (i historickými)
+// bez znovunačtení stránky.
 
 const LB = (() => {
-  let sessionId = getSessionId();
   let localMode = isPlaceholderUrl(FIREBASE_URL);
   let localModeReason = localMode ? "Živý žebříček není nastaven (Firebase URL chybí)." : "";
+  const LOCAL_KEY = "pexeso_local_tree";
 
   function isPlaceholderUrl(url) {
     if (!url) return true;
@@ -17,13 +21,9 @@ const LB = (() => {
     return false;
   }
 
-  function localKey() {
-    return `pexeso_local_${sessionId}`;
-  }
-
   function loadLocalTree() {
     try {
-      const raw = localStorage.getItem(localKey());
+      const raw = localStorage.getItem(LOCAL_KEY);
       return raw ? JSON.parse(raw) : {};
     } catch (e) {
       return {};
@@ -32,7 +32,7 @@ const LB = (() => {
 
   function saveLocalTree(tree) {
     try {
-      localStorage.setItem(localKey(), JSON.stringify(tree));
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(tree));
     } catch (e) {
       // localStorage nedostupné - tiše ignorujeme, hra pojede dál jen v paměti
     }
@@ -66,7 +66,7 @@ const LB = (() => {
       const res = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timer);
       if (!res.ok) throw new Error("HTTP " + res.status);
-      return res;
+      return await res.json();
     } catch (e) {
       clearTimeout(timer);
       throw e;
@@ -78,20 +78,6 @@ const LB = (() => {
     return `${base}/${path}.json`;
   }
 
-  async function remoteGet(path) {
-    const res = await fetchWithTimeout(remoteUrl(path), { method: "GET" });
-    return await res.json();
-  }
-
-  async function remotePut(path, value) {
-    const res = await fetchWithTimeout(remoteUrl(path), {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(value),
-    });
-    return await res.json();
-  }
-
   function switchToLocalFallback(reason) {
     if (!localMode) {
       localMode = true;
@@ -100,11 +86,9 @@ const LB = (() => {
   }
 
   async function dbGet(path) {
-    if (localMode) {
-      return getAtPath(loadLocalTree(), path);
-    }
+    if (localMode) return getAtPath(loadLocalTree(), path);
     try {
-      return await remoteGet(path);
+      return await fetchWithTimeout(remoteUrl(path), { method: "GET" });
     } catch (e) {
       switchToLocalFallback("Živý žebříček momentálně neodpovídá, pokračujeme lokálně na tomto zařízení.");
       return getAtPath(loadLocalTree(), path);
@@ -119,7 +103,11 @@ const LB = (() => {
       return value;
     }
     try {
-      return await remotePut(path, value);
+      return await fetchWithTimeout(remoteUrl(path), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(value),
+      });
     } catch (e) {
       switchToLocalFallback("Živý žebříček momentálně neodpovídá, pokračujeme lokálně na tomto zařízení.");
       const tree = loadLocalTree();
@@ -137,47 +125,37 @@ const LB = (() => {
     return localModeReason;
   }
 
-  function getSession() {
-    return sessionId;
+  // Zapíše jednoduchý příznak existence soutěže, aby ji lektorka viděla v historii
+  // i dřív, než se do ní kdokoliv zapojí.
+  async function touchSession(sessionId) {
+    return await dbPut(`sessions/${sessionId}/created`, true);
   }
 
-  async function getMode() {
-    return await dbGet(`sessions/${sessionId}/mode`);
-  }
-
-  async function setMode(mode) {
-    return await dbPut(`sessions/${sessionId}/mode`, mode);
-  }
-
-  async function getRoundPairs(round) {
+  async function getRoundPairs(sessionId, round) {
     return await dbGet(`sessions/${sessionId}/roundPairs/${round}`);
-  }
-
-  async function getAllRoundPairs() {
-    return await dbGet(`sessions/${sessionId}/roundPairs`);
   }
 
   // Zapíše dvojice pro kolo, POKUD JEŠTĚ NEEXISTUJÍ (jednoduchá ochrana proti přepsání,
   // v lokálním režimu i na Firebase - není to atomické přes síť, ale pro školení v malé skupině stačí).
-  async function setRoundPairsIfAbsent(round, idsArray) {
-    const existing = await getRoundPairs(round);
+  async function setRoundPairsIfAbsent(sessionId, round, idsArray) {
+    const existing = await getRoundPairs(sessionId, round);
     if (existing && Array.isArray(existing) && existing.length > 0) {
       return existing;
     }
     await dbPut(`sessions/${sessionId}/roundPairs/${round}`, idsArray);
-    const check = await getRoundPairs(round);
+    const check = await getRoundPairs(sessionId, round);
     return check && check.length ? check : idsArray;
   }
 
-  async function getFinishes(round) {
+  async function getFinishes(sessionId, round) {
     const data = await dbGet(`sessions/${sessionId}/rounds/${round}/finishes`);
     return data || {};
   }
 
   // Zapíše dokončení hráče a spočítá jeho pořadí v kole (kolik hráčů dokončilo dřív + 1).
   // casMs = čas dokončení (Date.now(), srovnatelný napříč zařízeními), trvaniS = doba hraní v sekundách (pro tie-break).
-  async function recordFinish(round, playerName, casMs, pocetChyb, trvaniS) {
-    const finishes = await getFinishes(round);
+  async function recordFinish(sessionId, round, playerName, casMs, pocetChyb, trvaniS) {
+    const finishes = await getFinishes(sessionId, round);
     let earlier = 0;
     for (const name in finishes) {
       if (name === playerName) continue;
@@ -188,7 +166,7 @@ const LB = (() => {
     const record = { cas_dokonceni: casMs, pocet_chyb: pocetChyb, poradi_v_kole: poradi, trvani_s: trvaniS };
     await dbPut(`sessions/${sessionId}/rounds/${round}/finishes/${encodeName(playerName)}`, record);
     // Po zápisu znovu spočítáme finální pořadí (mohli mezitím dokončit i jiní se stejným nebo dřívějším časem)
-    const fresh = await getFinishes(round);
+    const fresh = await getFinishes(sessionId, round);
     let finalEarlier = 0;
     for (const name in fresh) {
       if (name === encodeName(playerName)) continue;
@@ -203,12 +181,12 @@ const LB = (() => {
     return String(name).replace(/[.#$\[\]\/]/g, "_").slice(0, 60) || "hrac";
   }
 
-  async function getPlayers() {
+  async function getPlayers(sessionId) {
     const data = await dbGet(`sessions/${sessionId}/players`);
     return data || {};
   }
 
-  async function setPlayerStatus(playerName, status, casOdchoduMs) {
+  async function setPlayerStatus(sessionId, playerName, status, casOdchoduMs) {
     const payload = { jmeno: playerName, status: status };
     if (typeof casOdchoduMs === "number") payload.cas_odchodu = casOdchoduMs;
     return await dbPut(`sessions/${sessionId}/players/${encodeName(playerName)}`, payload);
@@ -216,11 +194,11 @@ const LB = (() => {
 
   // Spočítá celkové pořadí po 3 kolech soutěže: dokončení všech 3 kol > odchod (mezi odešlými
   // rozhoduje, kdo vydržel déle), poradí se řadí podle součtu bodů (pořadí v kolech), tie-break dle součtu časů.
-  async function computeOverallStandings() {
-    const players = await getPlayers();
+  async function computeOverallStandings(sessionId) {
+    const players = await getPlayers(sessionId);
     const roundFinishes = {};
     for (const r of [1, 2, 3]) {
-      roundFinishes[r] = await getFinishes(r);
+      roundFinishes[r] = await getFinishes(sessionId, r);
     }
     const names = new Set();
     Object.keys(players).forEach((n) => names.add(n));
@@ -262,6 +240,51 @@ const LB = (() => {
     return { standings, inProgress };
   }
 
+  // Smaže celou soutěž (kola, výsledky, hráče) - pro lektorku na plátně.
+  async function deleteSession(sessionId) {
+    if (localMode) {
+      const tree = loadLocalTree();
+      if (tree.sessions) {
+        delete tree.sessions[sessionId];
+        saveLocalTree(tree);
+      }
+      return;
+    }
+    try {
+      await fetchWithTimeout(remoteUrl(`sessions/${sessionId}`), { method: "DELETE" });
+    } catch (e) {
+      switchToLocalFallback("Živý žebříček momentálně neodpovídá, pokračujeme lokálně na tomto zařízení.");
+      const tree = loadLocalTree();
+      if (tree.sessions) {
+        delete tree.sessions[sessionId];
+        saveLocalTree(tree);
+      }
+    }
+  }
+
+  // Seznam ID soutěží, které mají dnes nějaký záznam (i prázdný "created" příznak) -
+  // pro historii/záložky na plátně lektorky.
+  async function listTodaySessions(dateStr) {
+    function fromKeys(keys) {
+      return keys.filter((id) => id === dateStr || id.startsWith(dateStr + "-")).sort();
+    }
+    if (localMode) {
+      const tree = loadLocalTree();
+      const keys = (tree.sessions && Object.keys(tree.sessions)) || [];
+      return fromKeys(keys);
+    }
+    try {
+      const data = await fetchWithTimeout(remoteUrl("sessions"), { method: "GET" });
+      const keys = data ? Object.keys(data) : [];
+      return fromKeys(keys);
+    } catch (e) {
+      switchToLocalFallback("Živý žebříček momentálně neodpovídá, pokračujeme lokálně na tomto zařízení.");
+      const tree = loadLocalTree();
+      const keys = (tree.sessions && Object.keys(tree.sessions)) || [];
+      return fromKeys(keys);
+    }
+  }
+
   function watch(getterFn, callback, intervalMs) {
     let stopped = false;
     async function tick() {
@@ -283,18 +306,17 @@ const LB = (() => {
   return {
     isLocal,
     getLocalReason,
-    getSession,
     encodeName,
-    getMode,
-    setMode,
+    touchSession,
     getRoundPairs,
-    getAllRoundPairs,
     setRoundPairsIfAbsent,
     getFinishes,
     recordFinish,
     getPlayers,
     setPlayerStatus,
     computeOverallStandings,
+    deleteSession,
+    listTodaySessions,
     watch,
   };
 })();

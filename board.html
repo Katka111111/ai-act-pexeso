@@ -14,58 +14,37 @@
       <div class="brand-badge">AI</div>
       <div>
         <h1>AI Act Pexeso</h1>
-        <small>Plátno lektorky</small>
+        <small>Plátno lektorky – Soutěž</small>
       </div>
     </div>
   </header>
 
-  <!-- Volba režimu -->
-  <section id="screen-mode-select" class="screen active">
-    <div class="card-panel" style="max-width:640px;">
-      <h2>Zvol režim dnešní hry</h2>
-      <p>Aktuální session: <strong id="session-date"></strong></p>
+  <section id="screen-monitor-soutez" class="screen active">
+    <div class="card-panel" style="max-width:760px;">
+      <h2 style="margin-bottom:6px;">Správa soutěží</h2>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:0;">
+        Zobrazuje se: <strong id="current-session-label"></strong>
+      </p>
 
-      <div style="text-align:left;background:var(--bg);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
-        <p style="margin:0 0 8px;font-size:14px;color:var(--text-muted);">
-          Chceš dnes spustit víc samostatných běhů (např. dopoledne/odpoledne, dvě různé skupiny)?
-          Zadej jim odlišné označení - každé bude mít vlastní losování i žebříček.
-        </p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <input type="text" id="session-label-input" placeholder="např. odpoledne" style="flex:1;min-width:160px;margin:0;">
-          <button class="btn-secondary" id="btn-session-apply" style="min-width:auto;">Použít</button>
-          <button class="btn-secondary" id="btn-session-reset" style="min-width:auto;">Výchozí (jen datum)</button>
-        </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <input type="text" id="session-label-input" placeholder="označení, např. odpoledne (nepovinné)" style="flex:1;min-width:180px;margin:0;">
+        <button class="btn-primary" id="btn-session-create" style="min-width:auto;">Vytvořit / přepnout</button>
       </div>
 
-      <div class="mode-buttons">
-        <button class="btn-primary" id="btn-mode-test">Test<br><small>individuální procvičení</small></button>
-        <button class="btn-accent" id="btn-mode-soutez">Soutěž<br><small>3 kola, živý žebříček</small></button>
-      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 6px;">Historie dnešních soutěží (klikni pro zobrazení, × pro smazání):</p>
+      <div id="session-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;"></div>
       <p class="local-mode-note" id="board-local-note" style="display:none;"></p>
 
       <div style="margin-top:20px;">
         <p style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">
-          Odkaz/QR pro hráče TÉTO session (naskenují ho, nebo pošli odkaz):
+          Odkaz/QR pro hráče TÉTO soutěže:
         </p>
         <p style="word-break:break-all;font-weight:600;color:var(--ozp-purple);" id="player-link-text"></p>
-        <img id="player-qr" alt="QR kód pro hráče" style="width:180px;height:180px;border-radius:10px;box-shadow:var(--shadow);">
+        <img id="player-qr" alt="QR kód pro hráče" class="qr-image" style="width:180px;height:180px;">
       </div>
     </div>
-  </section>
 
-  <!-- Průběh: TEST -->
-  <section id="screen-monitor-test" class="screen">
-    <div class="card-panel" style="max-width:640px;">
-      <span class="badge">Test</span>
-      <h2>Probíhá individuální procvičení</h2>
-      <p>Hráči trénují sami za sebe. Výsledky jsou soukromé a nikam se nezapisují, žebříček se pro tento režim nezobrazuje.</p>
-      <button class="btn-secondary btn-change-mode" style="margin-top:10px;">Změnit režim hry</button>
-    </div>
-  </section>
-
-  <!-- Průběh: SOUTĚŽ -->
-  <section id="screen-monitor-soutez" class="screen">
-    <div class="session-info">Soutěž – živý žebříček aktuálního kola</div>
+    <div class="session-info" style="margin-top:26px;">Živý žebříček aktuálního kola</div>
     <div class="round-tabs">
       <button class="round-tab-btn active" data-round="1">Kolo 1</button>
       <button class="round-tab-btn" data-round="2">Kolo 2</button>
@@ -74,9 +53,8 @@
     <div class="leaderboard-list" id="leaderboard-list">
       <p class="empty-note">Čekáme na výsledky…</p>
     </div>
-    <div style="text-align:center;margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <button class="btn-primary" id="btn-show-final" style="max-width:340px;">Zobrazit celkové výsledky (po 3. kole)</button>
-      <button class="btn-secondary btn-change-mode" style="max-width:220px;">Změnit režim hry</button>
+    <div style="text-align:center;margin-top:26px;">
+      <button class="btn-primary" id="btn-show-final" style="max-width:340px;margin:0 auto;">Zobrazit celkové výsledky (po 3. kole)</button>
     </div>
   </section>
 
@@ -98,6 +76,7 @@
 
 <script src="js/config.js"></script>
 <script src="js/leaderboard.js"></script>
+<script src="js/pexeso-core.js"></script>
 <script>
   function $(id) { return document.getElementById(id); }
 
@@ -106,71 +85,65 @@
     $(id).classList.add("active");
   }
 
+  const dateStr = getDateStr();
+  let currentSessionId = getSessionId();
   let currentViewRound = 1;
   let pollTimer = null;
 
-  function getCurrentLabel() {
-    return new URLSearchParams(window.location.search).get("s") || "";
+  function labelFromSessionId(id) {
+    return id === dateStr ? "" : id.slice(dateStr.length + 1);
   }
 
-  function goToLabel(label) {
-    const clean = (label || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
-    const url = new URL(window.location.href);
-    if (clean) url.searchParams.set("s", clean);
-    else url.searchParams.delete("s");
-    window.location.href = url.toString();
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   function updatePlayerLinkAndQr() {
-    const playerUrl = new URL("index.html" + window.location.search, window.location.href).toString();
+    const label = labelFromSessionId(currentSessionId);
+    const search = label ? `?s=${encodeURIComponent(label)}` : "";
+    const playerUrl = new URL("index.html" + search, window.location.href).toString();
     $("player-link-text").textContent = playerUrl;
-    $("player-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playerUrl)}`;
+    $("player-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(playerUrl)}`;
   }
 
-  async function initModeScreen() {
-    $("session-date").textContent = LB.getSession();
-    $("session-label-input").value = getCurrentLabel();
-    updatePlayerLinkAndQr();
-    $("btn-session-apply").addEventListener("click", () => goToLabel($("session-label-input").value));
-    $("session-label-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") goToLabel($("session-label-input").value);
+  async function refreshTabs() {
+    const ids = await LB.listTodaySessions(dateStr);
+    if (!ids.includes(currentSessionId)) ids.push(currentSessionId);
+    ids.sort();
+    $("session-tabs").innerHTML = ids
+      .map((id) => {
+        const label = labelFromSessionId(id) || "výchozí";
+        const active = id === currentSessionId;
+        return `<span style="display:inline-flex;align-items:stretch;border-radius:8px;overflow:hidden;">
+          <button data-id="${escapeHtml(id)}" class="round-tab-btn${active ? " active" : ""}" style="border-radius:0;">${escapeHtml(label)}</button>
+          <button data-delete-id="${escapeHtml(id)}" title="Smazat tuto soutěž" style="all:unset;cursor:pointer;color:#a33;background:#fdeeee;font-weight:800;padding:0 12px;display:flex;align-items:center;">×</button>
+        </span>`;
+      })
+      .join("");
+    document.querySelectorAll("#session-tabs button[data-id]").forEach((btn) => {
+      btn.addEventListener("click", () => switchToSession(btn.dataset.id));
     });
-    $("btn-session-reset").addEventListener("click", () => goToLabel(""));
-
-    if (LB.isLocal()) {
-      $("board-local-note").style.display = "block";
-      $("board-local-note").textContent = LB.getLocalReason();
-    }
-    $("btn-mode-test").addEventListener("click", async () => {
-      await LB.setMode("test");
-      showScreen("screen-monitor-test");
+    document.querySelectorAll("#session-tabs button[data-delete-id]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.deleteId;
+        const label = labelFromSessionId(id) || "výchozí";
+        if (!confirm(`Opravdu smazat soutěž „${label}" a všechny její výsledky? Tohle nejde vzít zpět.`)) return;
+        await LB.deleteSession(id);
+        if (id === currentSessionId) {
+          await switchToSession(dateStr);
+        } else {
+          await refreshTabs();
+        }
+      });
     });
-    $("btn-mode-soutez").addEventListener("click", async () => {
-      await LB.setMode("soutez");
-      showScreen("screen-monitor-soutez");
-      startPolling();
-    });
-
-    // Pokud lektorka omylem obnoví stránku (F5, výpadek projektoru apod.), režim už
-    // byl dřív zvolen a je uložený - vrátíme ji rovnou na správnou obrazovku místo
-    // aby musela volbu dělat znovu.
-    try {
-      const existingMode = await LB.getMode();
-      if (existingMode === "test") {
-        showScreen("screen-monitor-test");
-      } else if (existingMode === "soutez") {
-        showScreen("screen-monitor-soutez");
-        startPolling();
-      }
-    } catch (e) {
-      // žádný uložený režim - zůstaneme na výběrové obrazovce
-    }
   }
 
   function initRoundTabs() {
-    document.querySelectorAll(".round-tab-btn").forEach((btn) => {
+    document.querySelectorAll(".round-tab-btn[data-round]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".round-tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".round-tab-btn[data-round]").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         currentViewRound = parseInt(btn.dataset.round, 10);
         refreshRound();
@@ -181,7 +154,7 @@
   async function refreshRound() {
     const list = $("leaderboard-list");
     try {
-      const finishes = await LB.getFinishes(currentViewRound);
+      const finishes = await LB.getFinishes(currentSessionId, currentViewRound);
       const rows = Object.keys(finishes)
         .map((key) => ({ jmeno: key, ...finishes[key] }))
         .sort((a, b) => (a.poradi_v_kole || 999) - (b.poradi_v_kole || 999));
@@ -205,12 +178,6 @@
     }
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
   function startPolling() {
     if (pollTimer) clearInterval(pollTimer);
     refreshRound();
@@ -223,7 +190,7 @@
     list.innerHTML = '<p class="empty-note">Čekáme na výsledky…</p>';
     showScreen("screen-final");
     try {
-      const { standings } = await LB.computeOverallStandings();
+      const { standings } = await LB.computeOverallStandings(currentSessionId);
       if (standings.length === 0) {
         $("winner-name").textContent = "–";
         list.innerHTML = '<p class="empty-note">Čekáme na výsledky…</p>';
@@ -250,67 +217,35 @@
     }
   }
 
-  let boardConfettiRAF = null;
   function startBoardConfetti() {
-    const canvas = $("confetti-canvas-board");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const colors = ["#702082", "#ED8B00", "#9451a8", "#ffb347", "#63c98a", "#ffffff"];
-    const particles = [];
-    for (let i = 0; i < 260; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: -20 - Math.random() * canvas.height * 0.6,
-        size: 6 + Math.random() * 9,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        vy: 2 + Math.random() * 3.5,
-        vx: -1.5 + Math.random() * 3,
-        rot: Math.random() * 360,
-        vrot: -6 + Math.random() * 12,
-        shape: Math.random() > 0.5 ? "square" : "circle",
-      });
-    }
-    const start = performance.now();
-    if (boardConfettiRAF) cancelAnimationFrame(boardConfettiRAF);
-    function frame(now) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const elapsed = now - start;
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rot += p.vrot;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate((p.rot * Math.PI) / 180);
-        ctx.fillStyle = p.color;
-        if (p.shape === "square") ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-        else {
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-      });
-      if (elapsed < 6000) boardConfettiRAF = requestAnimationFrame(frame);
-      else ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    boardConfettiRAF = requestAnimationFrame(frame);
+    startConfettiOn($("confetti-canvas-board"), 6000, true);
   }
+
+  async function switchToSession(id) {
+    currentSessionId = id;
+    $("current-session-label").textContent = labelFromSessionId(id) || "(výchozí, jen datum)";
+    $("session-label-input").value = labelFromSessionId(id);
+    history.replaceState(null, "", labelFromSessionId(id) ? `?s=${encodeURIComponent(labelFromSessionId(id))}` : window.location.pathname);
+    updatePlayerLinkAndQr();
+    await LB.touchSession(id);
+    await refreshTabs();
+    showScreen("screen-monitor-soutez");
+    startPolling();
+  }
+
+  $("btn-session-create").addEventListener("click", () => {
+    const label = $("session-label-input").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
+    const id = label ? `${dateStr}-${label}` : dateStr;
+    switchToSession(id);
+  });
+  $("session-label-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("btn-session-create").click();
+  });
 
   $("btn-show-final").addEventListener("click", showFinalStandings);
   $("btn-back-to-monitor").addEventListener("click", () => {
     showScreen("screen-monitor-soutez");
     startPolling();
-  });
-
-  // Umožní lektorce kdykoli přepnout na jiný režim hry (Test <-> Soutěž),
-  // i když už dřív jeden zvolila - vrátí ji na výběrovou obrazovku.
-  document.querySelectorAll(".btn-change-mode").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (pollTimer) clearInterval(pollTimer);
-      showScreen("screen-mode-select");
-    });
   });
 
   window.addEventListener("resize", () => {
@@ -319,8 +254,16 @@
     c1.height = window.innerHeight;
   });
 
-  initModeScreen();
-  initRoundTabs();
+  async function init() {
+    if (LB.isLocal()) {
+      $("board-local-note").style.display = "block";
+      $("board-local-note").textContent = LB.getLocalReason();
+    }
+    initRoundTabs();
+    await switchToSession(currentSessionId);
+  }
+
+  init();
 </script>
 </body>
 </html>

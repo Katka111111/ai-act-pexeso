@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Act Pexeso – procvičování</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-badge">AI</div>
+      <div>
+        <h1>AI Act Pexeso</h1>
+        <small>Samostatné procvičování – hraj si, jak dlouho chceš</small>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1. Info o kole, tlačítko Začít -->
+  <section id="screen-info" class="screen active">
+    <div class="card-panel">
+      <span class="badge">Procvičování</span>
+      <h2>Připrav se</h2>
+      <p id="info-text">Uvidíš karty s pojmy a definicemi. Klikáním hledej správné dvojice.</p>
+      <button class="btn-accent" id="btn-start-round">Začít</button>
+      <div class="footer-leave" style="margin-top:14px;">
+        <button class="btn-leave" id="btn-leave-info">Chci odejít</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Hrací plocha -->
+  <section id="screen-game" class="screen">
+    <div class="game-header">
+      <div class="stats">
+        <div class="stat-chip"><span class="label">Čas</span><span id="stat-time">0 s</span></div>
+        <div class="stat-chip"><span class="label">Chyby</span><span id="stat-errors">0</span></div>
+        <div class="stat-chip"><span class="label">Nalezeno</span><span id="stat-found">0 / 0</span></div>
+      </div>
+      <button class="btn-leave" id="btn-leave-game">Chci odejít</button>
+    </div>
+    <div class="board-grid" id="board-grid"></div>
+  </section>
+
+  <!-- 3. Výsledek -->
+  <section id="screen-result" class="screen">
+    <div class="card-panel">
+      <span class="badge">Hotovo!</span>
+      <h2>Gratulujeme!</h2>
+      <div class="result-score" id="result-score">0</div>
+      <p>bodů</p>
+      <div class="result-details">
+        <div><div class="num" id="result-time">0 s</div><div class="lbl">Čas</div></div>
+        <div><div class="num" id="result-errors">0</div><div class="lbl">Chyby</div></div>
+      </div>
+      <button class="btn-primary" id="btn-play-again">Hrát znovu (nová kombinace)</button>
+      <div class="footer-leave" style="margin-top:14px;">
+        <button class="btn-leave" id="btn-quit">Chci odejít</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Konec -->
+  <section id="screen-left" class="screen">
+    <div class="card-panel">
+      <h2>Díky za procvičení!</h2>
+      <p>Kdykoliv se můžeš vrátit a zkusit to znovu - obnov si tuhle stránku.</p>
+    </div>
+  </section>
+
+</div>
+
+<canvas id="confetti-canvas"></canvas>
+
+<script src="js/cards-data.js"></script>
+<script src="js/pexeso-core.js"></script>
+<script src="js/test-game.js"></script>
+</body>
+</html>
