@@ -64,5 +64,5 @@ const CARDS_DATA = [
   { id: 57, term: "Technická dokumentace AI systému", definition: "Povinný popis fungování a rizik AI systému" },
   { id: 58, term: "Notifikovaná osoba", definition: "Subjekt oprávněný posuzovat shodu vysoce rizikových AI systémů" },
   { id: 59, term: "Oznámení incidentu", definition: "Povinnost nahlásit vážný incident způsobený AI systémem" },
-  { id: 60, term: "AI sandbox", definition: "Řízené testovací prostředí pro vývoj AI pod dohledem úřadů" }
+  { id: 60, term: "Token", definition: "základní jednotka textu používaná modelem ke zpracování a generování jazyka" }
 ];
